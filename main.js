@@ -9,6 +9,12 @@ function initialize()
     autocomplete = new google.maps.places.Autocomplete(input);
     directionsService = new google.maps.DirectionsService();
     autocomplete.addListener('place_changed', addPlace);
+
+    var stored_data = localStorage['planner_data'];
+    if ( stored_data ) {
+        $('#dataTextField').val(stored_data);
+        importData();
+    }
 }
 $(document).ready(initialize);
 
@@ -36,12 +42,12 @@ var placeListItemTemplate = '                                                   
             <span class="input-group-addon">                                                                    \
                 <img src="{0}" width="10px" height="16px" />                                                    \
             </span>                                                                                             \
-            <p type="text" class="form-control" id="searchPlaces">{1}</p>                                       \
+            <p type="text" class="form-control" title="Lat: {2}; Long: {3}">{1}</p>                             \
             <span class="input-group-btn">                                                                      \
-                <button class="btn btn-default" type="button" title="Mark as stop" onclick="addStop({2});">     \
+                <button class="btn btn-default" type="button" title="Mark as stop" onclick="addStop({4});">     \
                     <span class="glyphicon glyphicon-plus"></span>                                              \
                 </button>                                                                                       \
-                <button class="btn btn-default" type="button" title="Delete" onclick="removePlace({2});">       \
+                <button class="btn btn-default" type="button" title="Delete" onclick="removePlace({4});">       \
                     <span class="glyphicon glyphicon-remove"></span>                                            \
                 </button>                                                                                       \
             </span>                                                                                             \
@@ -53,28 +59,38 @@ var stopListItemTemplate = '                                                    
     <li class="list-group-item">                                                                                \
         <div class="input-group">                                                                               \
             <span class="input-group-addon">                                                                    \
-                <b>{3}</b>                                                                                      \
+                <b>{5}</b>                                                                                      \
             </span>                                                                                             \
-            <p type="text" class="form-control" id="searchPlaces">{0}</p>                                       \
+            <p type="text" class="form-control" title="Lat: {1}; Long: {2}">{0}</p>                                       \
             <span class="input-group-btn">                                                                      \
-                <button class="btn btn-default" type="button" title="Move Up" onclick="moveStop({1}, {2});">    \
+                <button class="btn btn-default" type="button" title="Move Up" onclick="moveStop({3}, {4});">    \
                     <span class="glyphicon glyphicon-arrow-up"></span>                                          \
                 </button>                                                                                       \
-                <button class="btn btn-default" type="button" title="Move Down" onclick="moveStop({1}, {3});">  \
+                <button class="btn btn-default" type="button" title="Move Down" onclick="moveStop({3}, {5});">  \
                     <span class="glyphicon glyphicon-arrow-down"></span>                                        \
                 </button>                                                                                       \
-                <button class="btn btn-default" type="button" title="Delete" onclick="removeStop({1});">        \
+                <button class="btn btn-default" type="button" title="Delete" onclick="removeStop({3});">        \
                     <span class="glyphicon glyphicon-remove"></span>                                            \
                 </button>                                                                                       \
             </span>                                                                                             \
         </div>                                                                                                  \
-        <ul class="list-group bg-info hidden" id="distanceInfo{1}">                                                    \
-            <li class="list-group-item list-group-item-info" id="distancePrevious{1}"></li>                     \
-            <li class="list-group-item list-group-item-info" id="distanceOrigin{1}"></li>                       \
-        </ul>                                                                                                   \
     </li>                                                                                                       \
 ';
+var legListItemTemplate = '          \
+    <li class="list-group-item">     \
+        <p><strong>{0}</strong></p>  \
+        <p>&mdash; {2} ({3}) </p>    \
+        <p><strong>{1}</strong></p>  \
+    </li>                            \
+'
 
+function clearAll() {
+    places = [];
+    stops  = [];
+
+    updateStops();
+    updatePlaces();
+}
 
 function addStop(index)
 {
@@ -109,7 +125,6 @@ function addPlace()
     if ( place ) {
         places.push(
             [
-                place.place_id,
                 place.formatted_address,
                 place.geometry.location.lat(),
                 place.geometry.location.lng(),
@@ -135,13 +150,16 @@ function updateStops() {
     for( var i=0; i < stops.length; i++){
         var item = stops[i];
         var element = stopListItemTemplate.f(
-            item[1], // formatted name
+            item[0], // formatted name
+            Math.round(item[1] * 100) / 100, // lat
+            Math.round(item[2] * 100) / 100, // long
             i,     // index
             i - 1, // previous
             i + 1  // next and also 1 based index
         );
         stops_list.append(element);
     }
+    saveData();
 }
 
 function updatePlaces() {
@@ -155,23 +173,26 @@ function updatePlaces() {
         var item = places[i];
         var element = placeListItemTemplate.f(
             getIcon(i),
-            item[1],
+            item[0],
+            Math.round(item[1] * 100) / 100, // lat
+            Math.round(item[2] * 100) / 100, // long
             i
         );
         places_list.append(element);
         addMarker(i);
     }
+    saveData();
 }
 
 function addMarker(index) {
     var item = places[index];
     if ( item ) {
-        var myLatLng = {lat: item[2], lng: item[3]};
+        var myLatLng = {lat: item[1], lng: item[2]};
         var marker   = new google.maps.Marker({
             position: myLatLng,
             map: map,
             icon: getIcon(index),
-            title: item[1]
+            title: item[0]
         });
         markers.push(marker);
     }
@@ -182,6 +203,159 @@ function clearMarkers(){
         markers[i].setMap(null);
     }
     markers = [];
+}
+
+function getMapColor(index) {
+    var colors = [
+        "AliceBlue",
+        "AntiqueWhite",
+        "Aqua",
+        "Aquamarine",
+        "Azure",
+        "Beige",
+        "Bisque",
+        "Black",
+        "BlanchedAlmond",
+        "Blue",
+        "BlueViolet",
+        "Brown",
+        "BurlyWood",
+        "CadetBlue",
+        "Chartreuse",
+        "Chocolate",
+        "Coral",
+        "CornflowerBlue",
+        "Cornsilk",
+        "Crimson",
+        "Cyan",
+        "DarkBlue",
+        "DarkCyan",
+        "DarkGoldenRod",
+        "DarkGray",
+        "DarkGrey",
+        "DarkGreen",
+        "DarkKhaki",
+        "DarkMagenta",
+        "DarkOliveGreen",
+        "DarkOrange",
+        "DarkOrchid",
+        "DarkRed",
+        "DarkSalmon",
+        "DarkSeaGreen",
+        "DarkSlateBlue",
+        "DarkSlateGray",
+        "DarkSlateGrey",
+        "DarkTurquoise",
+        "DarkViolet",
+        "DeepPink",
+        "DeepSkyBlue",
+        "DimGray",
+        "DimGrey",
+        "DodgerBlue",
+        "FireBrick",
+        "FloralWhite",
+        "ForestGreen",
+        "Fuchsia",
+        "Gainsboro",
+        "GhostWhite",
+        "Gold",
+        "GoldenRod",
+        "Gray",
+        "Grey",
+        "Green",
+        "GreenYellow",
+        "HoneyDew",
+        "HotPink",
+        "IndianRed",
+        "Indigo",
+        "Ivory",
+        "Khaki",
+        "Lavender",
+        "LavenderBlush",
+        "LawnGreen",
+        "LemonChiffon",
+        "LightBlue",
+        "LightCoral",
+        "LightCyan",
+        "LightGoldenRodYellow",
+        "LightGray",
+        "LightGrey",
+        "LightGreen",
+        "LightPink",
+        "LightSalmon",
+        "LightSeaGreen",
+        "LightSkyBlue",
+        "LightSlateGray",
+        "LightSlateGrey",
+        "LightSteelBlue",
+        "LightYellow",
+        "Lime",
+        "LimeGreen",
+        "Linen",
+        "Magenta",
+        "Maroon",
+        "MediumAquaMarine",
+        "MediumBlue",
+        "MediumOrchid",
+        "MediumPurple",
+        "MediumSeaGreen",
+        "MediumSlateBlue",
+        "MediumSpringGreen",
+        "MediumTurquoise",
+        "MediumVioletRed",
+        "MidnightBlue",
+        "MintCream",
+        "MistyRose",
+        "Moccasin",
+        "NavajoWhite",
+        "Navy",
+        "OldLace",
+        "Olive",
+        "OliveDrab",
+        "Orange",
+        "OrangeRed",
+        "Orchid",
+        "PaleGoldenRod",
+        "PaleGreen",
+        "PaleTurquoise",
+        "PaleVioletRed",
+        "PapayaWhip",
+        "PeachPuff",
+        "Peru",
+        "Pink",
+        "Plum",
+        "PowderBlue",
+        "Purple",
+        "RebeccaPurple",
+        "Red",
+        "RosyBrown",
+        "RoyalBlue",
+        "SaddleBrown",
+        "Salmon",
+        "SandyBrown",
+        "SeaGreen",
+        "SeaShell",
+        "Sienna",
+        "Silver",
+        "SkyBlue",
+        "SlateBlue",
+        "SlateGray",
+        "SlateGrey",
+        "Snow",
+        "SpringGreen",
+        "SteelBlue",
+        "Tan",
+        "Teal",
+        "Thistle",
+        "Tomato",
+        "Turquoise",
+        "Violet",
+        "Wheat",
+        "White",
+        "WhiteSmoke",
+        "Yellow",
+        "YellowGreen"
+    ];
 }
 
 function getIcon(index) {
@@ -195,7 +369,7 @@ function getIcon(index) {
         "purple",
         "brown",
         "darkgreen",
-        "pink",
+        "pink"
     ];
     var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
@@ -206,16 +380,35 @@ function getIcon(index) {
     return template.f(colors[colorIndex], letters[letterIndex]);
 }
 
+function updateLegs(result) {
+    var legs_list = $('#legsList');
+    // clear the list first
+    legs_list.empty();
+
+    if ( result ) {
+        var legs = result.routes[0].legs;
+        console.log(legs);
+        for (var i=0; i<legs.length; i++){
+            var start    = legs[i].start_address;
+            var end      = legs[i].end_address;
+            var distance = legs[i].distance.text;
+            var duration = legs[i].duration.text;
+            var element  = legListItemTemplate.f(start, end, distance, duration);
+            legs_list.append(element);
+        }
+    }
+}
+
 function createRoute(){
     if ( stops.length < 2 ) { return; }
 
-    var start_id = stops[0][1];
-    var goal_id  = stops[stops.length-1][1];
+    var start_id = stops[0][0];
+    var goal_id  = stops[stops.length-1][0];
 
     var waypoints = [];
     for(var i=1; i < stops.length-1; i++){
         var obj = {
-            location: stops[i][1]
+            location: stops[i][0]
         };
         waypoints.push(obj);
     }
@@ -227,74 +420,33 @@ function createRoute(){
         unitSystem: google.maps.UnitSystem.METRIC,
         travelMode: google.maps.TravelMode.DRIVING
     };
+    if ( directionsDisplay ) {
+        directionsDisplay.setMap(null);
+    }
 
-    directionsDisplay = new google.maps.DirectionsRenderer({suppressMarkers: true});
+    directionsDisplay = new google.maps.DirectionsRenderer({suppressMarkers: true, panel: document.getElementById("panel")});
     directionsDisplay.setMap(map);
 
     directionsService.route(request, function(result, status) {
+        console.log(result);
         if (status == google.maps.DirectionsStatus.OK) {
           directionsDisplay.setDirections(result);
+          updateLegs(result);
         }
     });
 }
 
-function getDistances(){
-    if ( stops.length < 2 ) { return; }
-
-    var stops_list = []
-    for(var i=0; i < stops.length; i++){
-        var obj = stops[i][1];
-        stops_list.push(obj);
-    }
-
-    var service = new google.maps.DistanceMatrixService();
-    service.getDistanceMatrix(
-      {
-        origins: stops_list,
-        destinations: stops_list,
-        travelMode: google.maps.TravelMode.DRIVING,
-        unitSystem: google.maps.UnitSystem.METRIC,
-      }, callback);
-
-    function callback(response, status) {
-        // See Parsing the Results for
-        // the basics of a callback function.
-        var origin   = [0];
-        var previous = [0];
-
-        if ( status == "OK" ){
-            for(var i=1; i < stops.length; i++){
-                var listElement     = '#distanceInfo{0}'.f(i);
-                var originElement   = '#distancePrevious{0}'.f(i);
-                var previousElement = '#distanceOrigin{0}'.f(i);
-
-                $(originElement).text(
-                    'Distance from {0} ( Start ): {1} ({2})'.f(
-                        stops[0][1],
-                        response.rows[0].elements[i].distance.text,
-                        response.rows[0].elements[i].duration.text
-                    )
-                );
-                $(previousElement).text(
-                    'Distance from {0} ( Previous ): {1} ({2})'.f(
-                        stops[i-1][1],
-                        response.rows[i-1].elements[i].distance.text,
-                        response.rows[i-1].elements[i].duration.text
-                    )
-                );
-                $(listElement).removeClass('hidden');
-            }
-        }
-    }
-}
-
-function exportData(){
+function saveData(){
     var myJSONText = JSON.stringify({
         places: places,
         stops: stops,
     });
-    $('#dataTextField').val(myJSONText);
+    localStorage['planner_data'] = myJSONText;
+    return myJSONText;
+}
 
+function exportData(){
+    $('#dataTextField').val(saveData());
 }
 
 function importData(){
@@ -318,9 +470,13 @@ function importData(){
 
         updatePlaces();
         updateStops();
+
+        localStorage['planner_data'] = myJSONText;
+        $("#dataError").addClass('hidden');
     }
     catch(err) {
         $("#dataError").text("Data format is incorrect or data is corrupted!");
         $("#dataError").removeClass('hidden');
     }
+    $('#dataTextField').val('');
 }

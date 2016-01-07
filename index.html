@@ -70,28 +70,34 @@
                         </div>
                     </div>
                     <div class="panel panel-primary">
-                        <div class="panel-heading"><span class="glyphicon glyphicon-flag"></span> My Places</div>
-                        <div class="panel-body">
-                            <ul class="list-group" id="placesList">
-
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="panel panel-primary">
                         <div class="panel-heading">
-                            <span class="glyphicon glyphicon-road btn-sm"></span> My Stops
+                            <span class="glyphicon glyphicon-pushpin btn-sm"></span> My Stops
                         </div>
                         <div class="panel-body">
                             <ul class="list-group" id="stopsList">
                             </ul>
-                             <div class="btn-group pull-right">
-                                <span class="btn btn-primary" onclick="createRoute();getDistances();">Calculate Route</span>
-                             </div>
+                            <div class="btn-group pull-right">
+                                <span class="btn btn-primary" onclick="createRoute();">
+                                    Calculate Route
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel panel-primary">
+                        <div class="panel-heading"><span class="glyphicon glyphicon-flag"></span> My Places</div>
+                        <div class="panel-body">
+                            <ul class="list-group" id="placesList">
+                            </ul>
+                            <div class="btn-group pull-right">
+                                <span class="btn btn-primary" onclick="clearAll();">
+                                    Clear
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <div class="panel panel-primary">
                         <div class="panel-heading">
-                            <span class="glyphicon glyphicon-road btn-sm"></span> Import / Export
+                            <span class="glyphicon glyphicon-transfer btn-sm"></span> Import / Export
                         </div>
                         <div class="panel-body">
                             <p class="alert alert-danger hidden" role="alert" id="dataError" >
@@ -111,7 +117,7 @@
                     </div>
                     <div class="panel panel-primary">
                         <div class="panel-heading">
-                            <span class="glyphicon glyphicon-road btn-sm"></span> How To
+                            <span class="glyphicon glyphicon-info-sign btn-sm"></span> How To
                         </div>
                         <div class="panel-body">
                             <p>Enter a location to add it to the places you want to visit.</p>
@@ -121,8 +127,18 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-9">
+                <div class="col-md-7">
                     <div id="map"> </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="panel panel-primary" id="routeSummary">
+                        <div class="panel-heading">
+                            <span class="glyphicon glyphicon-road btn-sm"></span> Route Summary
+                        </div>
+                        <ul class="list-group" id="legsList">
+                            <li class="list-group-item"><b>No routes defined.</b></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
