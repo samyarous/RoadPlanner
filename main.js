@@ -8,6 +8,7 @@ function initialize()
     var input = document.getElementById('searchPlaces');
     autocomplete = new google.maps.places.Autocomplete(input);
     directionsService = new google.maps.DirectionsService();
+    autocomplete.addListener('place_changed', addPlace);
 }
 $(document).ready(initialize);
 
@@ -35,7 +36,7 @@ var placeListItemTemplate = '                                                   
             <span class="input-group-addon">                                                                    \
                 <img src="{0}" width="10px" height="16px" />                                                    \
             </span>                                                                                             \
-            <p type="text" class="form-control" id="searchPlaces">{1}</p>                   \
+            <p type="text" class="form-control" id="searchPlaces">{1}</p>                                       \
             <span class="input-group-btn">                                                                      \
                 <button class="btn btn-default" type="button" title="Mark as stop" onclick="addStop({2});">     \
                     <span class="glyphicon glyphicon-plus"></span>                                              \
@@ -54,7 +55,7 @@ var stopListItemTemplate = '                                                    
             <span class="input-group-addon">                                                                    \
                 <b>{3}</b>                                                                                      \
             </span>                                                                                             \
-            <p type="text" class="form-control" id="searchPlaces">{0}</p>                   \
+            <p type="text" class="form-control" id="searchPlaces">{0}</p>                                       \
             <span class="input-group-btn">                                                                      \
                 <button class="btn btn-default" type="button" title="Move Up" onclick="moveStop({1}, {2});">    \
                     <span class="glyphicon glyphicon-arrow-up"></span>                                          \
@@ -67,6 +68,10 @@ var stopListItemTemplate = '                                                    
                 </button>                                                                                       \
             </span>                                                                                             \
         </div>                                                                                                  \
+        <ul class="list-group bg-info hidden" id="distanceInfo{1}">                                                    \
+            <li class="list-group-item list-group-item-info" id="distancePrevious{1}"></li>                     \
+            <li class="list-group-item list-group-item-info" id="distanceOrigin{1}"></li>                       \
+        </ul>                                                                                                   \
     </li>                                                                                                       \
 ';
 
@@ -104,7 +109,7 @@ function addPlace()
     if ( place ) {
         places.push(
             [
-                place,
+                place.place_id,
                 place.formatted_address,
                 place.geometry.location.lat(),
                 place.geometry.location.lng(),
@@ -137,8 +142,6 @@ function updateStops() {
         );
         stops_list.append(element);
     }
-
-    updateURL();
 }
 
 function updatePlaces() {
@@ -158,8 +161,6 @@ function updatePlaces() {
         places_list.append(element);
         addMarker(i);
     }
-
-    updateURL();
 }
 
 function addMarker(index) {
@@ -226,39 +227,100 @@ function createRoute(){
         unitSystem: google.maps.UnitSystem.METRIC,
         travelMode: google.maps.TravelMode.DRIVING
     };
-    console.log(request);
 
-    directionsDisplay = new google.maps.DirectionsRenderer();
+    directionsDisplay = new google.maps.DirectionsRenderer({suppressMarkers: true});
     directionsDisplay.setMap(map);
 
     directionsService.route(request, function(result, status) {
         if (status == google.maps.DirectionsStatus.OK) {
           directionsDisplay.setDirections(result);
         }
-        console.log(status);
-        console.log(result);
     });
 }
 
-function updateURL(){
-    $("#shareLink").attr("href", getURL());
-    console.log(getURL());
-    console.log($("#shareLink"));
-}
+function getDistances(){
+    if ( stops.length < 2 ) { return; }
 
-function getURL(){
-    var places_data = [];
-    for (var i=0; i < places.length; i++ ){
-        places_data.push(places[i].join(seperator='|#|'));
-    }
-    var stops_data = [];
-    for ( var i=0; i < stops.length; i++ ){
-        stops_data.push(stops[i].join(seperator='|#|'));
+    var stops_list = []
+    for(var i=0; i < stops.length; i++){
+        var obj = stops[i][1];
+        stops_list.push(obj);
     }
 
-    return "./?data={0}___{1}".f(
-        places_data.join(seperator='|%|'),
-        stops_data.join(seperator='|%|')
-    );
+    var service = new google.maps.DistanceMatrixService();
+    service.getDistanceMatrix(
+      {
+        origins: stops_list,
+        destinations: stops_list,
+        travelMode: google.maps.TravelMode.DRIVING,
+        unitSystem: google.maps.UnitSystem.METRIC,
+      }, callback);
+
+    function callback(response, status) {
+        // See Parsing the Results for
+        // the basics of a callback function.
+        var origin   = [0];
+        var previous = [0];
+
+        if ( status == "OK" ){
+            for(var i=1; i < stops.length; i++){
+                var listElement     = '#distanceInfo{0}'.f(i);
+                var originElement   = '#distancePrevious{0}'.f(i);
+                var previousElement = '#distanceOrigin{0}'.f(i);
+
+                $(originElement).text(
+                    'Distance from {0} ( Start ): {1} ({2})'.f(
+                        stops[0][1],
+                        response.rows[0].elements[i].distance.text,
+                        response.rows[0].elements[i].duration.text
+                    )
+                );
+                $(previousElement).text(
+                    'Distance from {0} ( Previous ): {1} ({2})'.f(
+                        stops[i-1][1],
+                        response.rows[i-1].elements[i].distance.text,
+                        response.rows[i-1].elements[i].duration.text
+                    )
+                );
+                $(listElement).removeClass('hidden');
+            }
+        }
+    }
 }
 
+function exportData(){
+    var myJSONText = JSON.stringify({
+        places: places,
+        stops: stops,
+    });
+    $('#dataTextField').val(myJSONText);
+
+}
+
+function importData(){
+    try {
+
+        var myJSONText = $('#dataTextField').val();
+        var data = JSON.parse(myJSONText);
+        var placesData = data['places'];
+        var stopsData  = data['stops'];
+
+        if ( placesData ) {
+            places = placesData;
+        } else {
+            places = [];
+        }
+        if ( stopsData ) {
+            stops = stopsData;
+        } else {
+            stops = [];
+        }
+
+        updatePlaces();
+        updateStops();
+    }
+    catch(err) {
+        $("#dataError").text("Data format is incorrect or data is corrupted!");
+        $("#dataError").removeClass('hidden');
+    }
+}

@@ -24,7 +24,7 @@
               padding: 0
             }
             #map {
-                height: 600px;
+                height: 800px;
 
             }
             .footer {
@@ -60,28 +60,13 @@
     </head>
     <body>
         <div class="container-fluid">
+            <h1>Road Planner!</h1>
             <div class="row-fluid">
-                <div class="col-md-12">
-                    <div class="jumbotron">
-                        <h1>Road Planner!</h1>
-                        <p>Plan your road trip using Google Maps and add interesting places you want to
-                        visit. </p>
-                        <p>Right click on the share link in order to share your findings with other people</p>
-                        <h2><a href="" id="shareLink">Share</a></h2>
-                    </div>
-                </div>
-            </div>
-            <div class="row-fluid">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="panel panel-primary">
                         <div class="input-group">
                             <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span></span>
                             <input type="text" class="form-control" id="searchPlaces"></input>
-                            <span class="input-group-btn">
-                                <button class="btn btn-default" type="button" title="Add stop" onclick="addPlace();">
-                                    <span class="glyphicon glyphicon-plus"></span>
-                                </button>
-                            </span>
                         </div>
                     </div>
                     <div class="panel panel-primary">
@@ -100,12 +85,43 @@
                             <ul class="list-group" id="stopsList">
                             </ul>
                              <div class="btn-group pull-right">
-                                <span class="btn btn-primary" onclick="createRoute();">Calculate Route</span>
+                                <span class="btn btn-primary" onclick="createRoute();getDistances();">Calculate Route</span>
                              </div>
                         </div>
                     </div>
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <span class="glyphicon glyphicon-road btn-sm"></span> Import / Export
+                        </div>
+                        <div class="panel-body">
+                            <p class="alert alert-danger hidden" role="alert" id="dataError" >
+                            </p>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="dataTextField"></input>
+                                <span class="input-group-btn">
+                                    <button class="btn btn-default" type="button" title="Import" onclick="importData();">
+                                        <span class="glyphicon glyphicon-import"></span>
+                                    </button>
+                                    <button class="btn btn-default" type="button" title="Export" onclick="exportData();">
+                                        <span class="glyphicon glyphicon-export"></span>
+                                    </button>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <span class="glyphicon glyphicon-road btn-sm"></span> How To
+                        </div>
+                        <div class="panel-body">
+                            <p>Enter a location to add it to the places you want to visit.</p>
+                            <p>Select the places you want to stop at and calculate the best route.</p>
+                            <p>Keep trying different configuration until you are satisfied with the result.</p>
+                            <p>It is possible to export your configuration to JSON and share it with the world.</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-md-8">
+                <div class="col-md-9">
                     <div id="map"> </div>
                 </div>
             </div>
