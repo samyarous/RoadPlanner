@@ -14,10 +14,18 @@
             html {
               position: relative;
               min-height: 100%;
+              height: 100%;
             }
             body {
               /* Margin bottom by footer height */
               margin-bottom: 60px;
+              height: 100%;
+              margin: 0;
+              padding: 0
+            }
+            #map {
+                height: 600px;
+
             }
             .footer {
               position: absolute;
@@ -31,10 +39,7 @@
 
 
         <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-        <title>Bootstrap 101 Template</title>
-
-        <!-- Bootstrap -->
-        <link href="css/bootstrap.min.css" rel="stylesheet">
+        <title>Road Planner</title>
 
         <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
         <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -42,36 +47,73 @@
           <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
           <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
         <![endif]-->
-    </head>
-    <body>
-        <div class="container-fluid">
-            <div class="row">
-                <div class="jumbotron">
-                    <h1>Road Planner!</h1>
-                    <p>Plan your road trip using Google Maps and add interesting places you want to
-                    visit. </p>
-                    <p><a class="btn btn-primary btn-lg" href="#" role="button">Start</a></p>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-4" style="background: blue">
-
-
-                </div>
-                <div class="col-md-8" style="background: red">
-
-                </div>
-            </div>
-        </div>
-        <footer class="footer">
-            <div class="container">
-                <p class="text-muted text-right">Road Planner 2016</p>
-            </div>
-        </footer>
 
         <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
         <!-- Latest compiled and minified JavaScript -->
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+
+        <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAutbj5SuBY0DDNkcaU3mQRvoMjvlfW1no&libraries=places"
+            type="text/javascript"></script>
+
+        <script type="text/javascript" src="main.js"></script>
+    </head>
+    <body>
+        <div class="container-fluid">
+            <div class="row-fluid">
+                <div class="col-md-12">
+                    <div class="jumbotron">
+                        <h1>Road Planner!</h1>
+                        <p>Plan your road trip using Google Maps and add interesting places you want to
+                        visit. </p>
+                        <p>Right click on the share link in order to share your findings with other people</p>
+                        <h2><a href="" id="shareLink">Share</a></h2>
+                    </div>
+                </div>
+            </div>
+            <div class="row-fluid">
+                <div class="col-md-4">
+                    <div class="panel panel-primary">
+                        <div class="input-group">
+                            <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span></span>
+                            <input type="text" class="form-control" id="searchPlaces"></input>
+                            <span class="input-group-btn">
+                                <button class="btn btn-default" type="button" title="Add stop" onclick="addPlace();">
+                                    <span class="glyphicon glyphicon-plus"></span>
+                                </button>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="panel panel-primary">
+                        <div class="panel-heading"><span class="glyphicon glyphicon-flag"></span> My Places</div>
+                        <div class="panel-body">
+                            <ul class="list-group" id="placesList">
+
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <span class="glyphicon glyphicon-road btn-sm"></span> My Stops
+                        </div>
+                        <div class="panel-body">
+                            <ul class="list-group" id="stopsList">
+                            </ul>
+                             <div class="btn-group pull-right">
+                                <span class="btn btn-primary" onclick="createRoute();">Calculate Route</span>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div id="map"> </div>
+                </div>
+            </div>
+        </div>
+<!--         <footer class="footer">
+            <div class="container">
+                <p class="text-muted text-right">Road Planner 2016</p>
+            </div>
+        </footer> -->
     </body>
 </html>
