@@ -205,6 +205,11 @@ function clearMarkers(){
     markers = [];
 }
 
+function reverseStops(){
+    stops.reverse();
+    updateStops();
+}
+
 function getMapColor(index) {
     var colors = [
         "AliceBlue",
