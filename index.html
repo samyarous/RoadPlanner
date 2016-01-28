@@ -77,11 +77,21 @@
                             <ul class="list-group" id="stopsList">
                             </ul>
                             <div class="btn-group pull-right">
-                                <span class="btn btn-primary" onclick="reverseStops();">
-                                    Reverse
+                                <span class="btn btn-primary glyphicon glyphicon-refresh" title="Reverse" onclick="reverseStops();">
+
                                 </span>
-                                <span class="btn btn-primary" onclick="createRoute();">
-                                    Calculate Route
+                                <span class="btn btn-primary glyphicon glyphicon-road" title="Calculate Route" onclick="createRoute();">
+
+                                </span>
+                            </div>
+                            <div class="btn-group pull-right">
+                                <span class="btn btn-primary glyphicon glyphicon-cutlery" title="Food Break" onclick="addBreak('food');">
+
+                                </span>
+                                <span class="btn btn-primary glyphicon glyphicon-shopping-cart" title="Shopping Break" onclick="addBreak('Shopping');">
+                                </span>
+                                <span class="btn btn-primary glyphicon glyphicon-bed" title="Sleep" onclick="addBreak('sleep');">
+
                                 </span>
                             </div>
                         </div>

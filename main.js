@@ -79,7 +79,9 @@ var stopListItemTemplate = '                                                    
 var legListItemTemplate = '          \
     <li class="list-group-item">     \
         <p><strong>{0}</strong></p>  \
-        <p>&mdash; {2} ({3}) </p>    \
+            <p class="text-info"><span class="glyphicon glyphicon-road"></span> {2}</p> \
+            <p class="text-info"><span class="glyphicon glyphicon-time"></span> {3}</p> \
+            <p class="text-info" title="Euro95 (10l / 100km)"><span class="glyphicon glyphicon-oil"></span> {4}</p> \
         <p><strong>{1}</strong></p>  \
     </li>                            \
 '
@@ -90,6 +92,22 @@ function clearAll() {
 
     updateStops();
     updatePlaces();
+}
+
+function addBreak(kind){
+    if ( kind ) {
+        var name = "Break: {0}".format(kind)
+        stops.push(
+            [
+                name,
+                0,
+                0,
+                "stop",
+
+            ]
+        );
+        updateStops();
+    }
 }
 
 function addStop(index)
@@ -123,11 +141,13 @@ function addPlace()
 {
     var place = autocomplete.getPlace();
     if ( place ) {
+        console.log(place);
         places.push(
             [
-                place.formatted_address,
+                place.name,
                 place.geometry.location.lat(),
                 place.geometry.location.lng(),
+                "place",
             ]
         );
         updatePlaces();
@@ -392,13 +412,13 @@ function updateLegs(result) {
 
     if ( result ) {
         var legs = result.routes[0].legs;
-        console.log(legs);
         for (var i=0; i<legs.length; i++){
             var start    = legs[i].start_address;
             var end      = legs[i].end_address;
-            var distance = legs[i].distance.text;
-            var duration = legs[i].duration.text;
-            var element  = legListItemTemplate.f(start, end, distance, duration);
+            var distance = format_distance(legs[i].distance.value);
+            var duration = format_timespan(legs[i].duration.value);
+            var cost     = calculate_cost(legs[i].distance.value);
+            var element  = legListItemTemplate.f(start, end, distance, duration, cost);
             legs_list.append(element);
         }
     }
@@ -407,13 +427,15 @@ function updateLegs(result) {
 function createRoute(){
     if ( stops.length < 2 ) { return; }
 
-    var start_id = stops[0][0];
-    var goal_id  = stops[stops.length-1][0];
+    var place_stops = stops.filter(function(value) { return value[3] == null || value[3] == "place"; });
+    console.log(place_stops);
+    var start_id = place_stops[0][0];
+    var goal_id  = place_stops[place_stops.length-1][0];
 
     var waypoints = [];
-    for(var i=1; i < stops.length-1; i++){
+    for(var i=1; i < place_stops.length-1; i++){
         var obj = {
-            location: stops[i][0]
+            location: place_stops[i][0]
         };
         waypoints.push(obj);
     }
@@ -484,4 +506,51 @@ function importData(){
         $("#dataError").removeClass('hidden');
     }
     $('#dataTextField').val('');
+}
+
+function format_timespan ( seconds ) {
+    var hours   = Math.floor( seconds / 3600);
+    var minutes = Math.floor( seconds / 60 ) % 60;
+
+    if ( hours > 0 ) {
+        if ( minutes > 0 ) {
+            return "{0} h {1} min".format(hours, minutes);
+        } else {
+            return "{0} h".format(hours);
+        }
+    } else {
+        return "{0} min".format(minutes);
+    }
+}
+
+function format_distance ( distance ) {
+    var km = Math.floor( distance / 1000 );
+    var meters = distance % 1000;
+
+    if ( km > 0 ) {
+        return "{0} km".format(km);
+    } else {
+        return "{0} m".format(meters);
+    }
+}
+
+function calculate_cost ( distance ) {
+    var euro95Price = 1.525;
+    var dieselPrice = 1.129;
+    var lpgPrice    = 0.754;
+
+    var averageCarConsumption = 10;
+
+    var km = Math.floor( distance / 1000 );
+    var liters = km * averageCarConsumption / 100;
+
+    var euro95Total = liters * euro95Price;
+    var dieselTotal = liters * dieselPrice;
+    var lpgTotal    = liters * lpgPrice;
+
+    /*euro95Total = Math.round(euro95Total * 100 ) / 100;
+    dieselTotal = Math.round(dieselTotal * 100 ) / 100;
+    lpgTotal    = Math.round(lpgTotal * 100 ) / 100;*/
+
+    return "{0} €".format(euro95Total);
 }
