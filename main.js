@@ -14,6 +14,13 @@ function initialize()
     if ( stored_data ) {
         $('#dataTextField').val(stored_data);
         importData();
+        createRoute();
+    }
+
+    if($.url().param('print')){
+        $('#option-col').addClass('hidden');
+        $('#map-col').removeClass().addClass('col-md-9');
+        $('#route-col').removeClass().addClass('col-md-3');
     }
 }
 $(document).ready(initialize);
@@ -78,14 +85,23 @@ var stopListItemTemplate = '                                                    
 ';
 var legListItemTemplate = '          \
     <li class="list-group-item">     \
-        <p><strong>{0}</strong></p>  \
-            <p class="text-info"><span class="glyphicon glyphicon-road"></span> {2}</p> \
-            <p class="text-info"><span class="glyphicon glyphicon-time"></span> {3}</p> \
-            <p class="text-info" title="Euro95 (10l / 100km)"><span class="glyphicon glyphicon-oil"></span> {4}</p> \
-        <p><strong>{1}</strong></p>  \
+        <p><strong><span class="glyphicon glyphicon-play"></span> {0}  \
+        (<span class="glyphicon glyphicon-time"></span> {7})</strong></p>  \
+            <p class="text-info"><span class="glyphicon glyphicon-road"></span> {2} \
+            <span class="glyphicon glyphicon-hourglass"></span> {3}\
+            <span title="Euro95 (10l / 100km)" class="glyphicon glyphicon-oil"></span> {4}€</p> \
+        <p><strong><span class="glyphicon glyphicon-play"></span> {1}  \
+        (<span class="glyphicon glyphicon-time"></span> {8})</strong></p>  \
+            <p class="text-info"><span class="glyphicon glyphicon-hourglass"></span> {5} \
+            <span class="glyphicon glyphicon-tags"></span> {6}</p> \
     </li>                            \
 '
 
+var summaryFooterTemplate = '                                                               \
+    <p><span class="glyphicon glyphicon-road"></span> {0}                              \
+    <span class="glyphicon glyphicon-hourglass"></span> {1}                          \
+    <span title="Euro95 (10l / 100km)" class="glyphicon glyphicon-oil"></span> {2}€</p>   \
+'
 function clearAll() {
     places = [];
     stops  = [];
@@ -407,20 +423,59 @@ function getIcon(index) {
 
 function updateLegs(result) {
     var legs_list = $('#legsList');
+    var header    = $('#routeSummaryFooter');
     // clear the list first
     legs_list.empty();
+    var hours    = parseInt($.url().param('hours'.format(i)))  || 7;
+    var minutes = parseInt($.url().param('minutes'.format(i))) || 0;
+
+    var totalCost     = 0;
+    var totalDistance = 0;
+    var totalDuration = 0;
 
     if ( result ) {
         var legs = result.routes[0].legs;
         for (var i=0; i<legs.length; i++){
+            var pause_time = parseInt($.url().param('pause{0}'.format(i))) || 0;
+            var activity   = $.url().param('activity{0}'.format(i)) || 'Passage';
+
             var start    = legs[i].start_address;
             var end      = legs[i].end_address;
             var distance = format_distance(legs[i].distance.value);
             var duration = format_timespan(legs[i].duration.value);
             var cost     = calculate_cost(legs[i].distance.value);
-            var element  = legListItemTemplate.f(start, end, distance, duration, cost);
+
+            totalCost += cost;
+            totalDistance += legs[i].distance.value;
+            totalDuration += legs[i].duration.value;
+
+            var start_time = new Date(0, 0, 0, hours, minutes, 0, 0);
+            minutes += Math.round(legs[i].duration.value / 60);
+            var end_time = new Date(0, 0, 0, hours, minutes, 0, 0);
+
+            var element  = legListItemTemplate.f(
+                start,
+                end,
+                distance,
+                duration,
+                cost,
+                format_timespan(pause_time*60),
+                activity,
+                format_date(start_time),
+                format_date(end_time)
+            );
             legs_list.append(element);
+
+            minutes += pause_time;
         }
+
+        header.append(
+            summaryFooterTemplate.format(
+                format_distance(totalDistance),
+                format_timespan(totalDuration),
+                Math.round(totalCost * 100) / 100
+            )
+        );
     }
 }
 
@@ -508,18 +563,25 @@ function importData(){
     $('#dataTextField').val('');
 }
 
+function format_date(date) {
+
+    var hours   = date.getHours();
+    var minutes = date.getMinutes();
+    return "{0}h:{1}min".format(hours, minutes);
+}
+
 function format_timespan ( seconds ) {
     var hours   = Math.floor( seconds / 3600);
     var minutes = Math.floor( seconds / 60 ) % 60;
 
     if ( hours > 0 ) {
         if ( minutes > 0 ) {
-            return "{0} h {1} min".format(hours, minutes);
+            return "{0}h {1}min".format(hours, minutes);
         } else {
-            return "{0} h".format(hours);
+            return "{0}h".format(hours);
         }
     } else {
-        return "{0} min".format(minutes);
+        return "{0}min".format(minutes);
     }
 }
 
@@ -528,9 +590,9 @@ function format_distance ( distance ) {
     var meters = distance % 1000;
 
     if ( km > 0 ) {
-        return "{0} km".format(km);
+        return "{0}km".format(km);
     } else {
-        return "{0} m".format(meters);
+        return "{0}m".format(meters);
     }
 }
 
@@ -539,7 +601,8 @@ function calculate_cost ( distance ) {
     var dieselPrice = 1.129;
     var lpgPrice    = 0.754;
 
-    var averageCarConsumption = 10;
+
+    var averageCarConsumption = parseFloat($.url().param('consumption')) || 10;
 
     var km = Math.floor( distance / 1000 );
     var liters = km * averageCarConsumption / 100;
@@ -548,9 +611,9 @@ function calculate_cost ( distance ) {
     var dieselTotal = liters * dieselPrice;
     var lpgTotal    = liters * lpgPrice;
 
-    /*euro95Total = Math.round(euro95Total * 100 ) / 100;
+    euro95Total = Math.round(euro95Total * 100 ) / 100;
     dieselTotal = Math.round(dieselTotal * 100 ) / 100;
-    lpgTotal    = Math.round(lpgTotal * 100 ) / 100;*/
+    lpgTotal    = Math.round(lpgTotal * 100 ) / 100;
 
-    return "{0} €".format(euro95Total);
+    return euro95Total;
 }

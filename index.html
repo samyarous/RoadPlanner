@@ -56,13 +56,14 @@
         <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAutbj5SuBY0DDNkcaU3mQRvoMjvlfW1no&libraries=places"
             type="text/javascript"></script>
 
+        <script type="text/javascript" src="purl.js"></script>
         <script type="text/javascript" src="main.js"></script>
     </head>
     <body>
         <div class="container-fluid">
             <h1>Road Planner!</h1>
             <div class="row-fluid">
-                <div class="col-md-3">
+                <div class="col-md-3" id="option-col">
                     <div class="panel panel-primary">
                         <div class="input-group">
                             <span class="input-group-addon"><span class="glyphicon glyphicon-search"></span></span>
@@ -140,17 +141,20 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-7">
+                <div class="col-md-7" id="map-col">
                     <div id="map"> </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-2" id="route-col">
                     <div class="panel panel-primary" id="routeSummary">
                         <div class="panel-heading">
-                            <span class="glyphicon glyphicon-road btn-sm"></span> Route Summary
+                            <p><span class="glyphicon glyphicon-road btn-sm"></span> Route Summary<p>
                         </div>
                         <ul class="list-group" id="legsList">
                             <li class="list-group-item"><b>No routes defined.</b></li>
                         </ul>
+                        <div class="panel-heading" id="routeSummaryFooter">
+
+                        </div>
                     </div>
                 </div>
             </div>
