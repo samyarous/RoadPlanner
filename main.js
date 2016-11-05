@@ -500,7 +500,7 @@ function createRoute(){
         destination: goal_id,
         waypoints: waypoints,
         unitSystem: google.maps.UnitSystem.METRIC,
-        travelMode: google.maps.TravelMode.DRIVING
+        travelMode: google.maps.TravelMode.WALKING
     };
     if ( directionsDisplay ) {
         directionsDisplay.setMap(null);
